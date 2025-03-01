@@ -1,31 +1,34 @@
-import type React from "react"
-import { Roboto_Mono } from "next/font/google"
-import "./globals.css"
+import { Roboto_Mono } from "next/font/google";
+import type React from "react";
+import Navbar from "../components/Navbar";
+import { AuthProvider } from "../context/AuthContext";
+import "./globals.css";
 
 const robotoMono = Roboto_Mono({
   subsets: ["latin"],
   display: "swap",
   weight: ["400", "700"],
-})
+});
 
 export const metadata = {
   title: "Minimalist Discussions",
   description: "A simple discussions platform",
-    generator: 'v0.dev'
-}
+  generator: "v0.dev",
+};
 
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
   return (
     <html lang="en">
-      <body className={robotoMono.className}>{children}</body>
+      <body className={robotoMono.className}>
+        <AuthProvider>
+          <Navbar />
+          {children}
+        </AuthProvider>
+      </body>
     </html>
-  )
+  );
 }
-
-
-
-import './globals.css'
