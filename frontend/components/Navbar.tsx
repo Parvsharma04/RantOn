@@ -21,12 +21,8 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="flex justify-between items-center p-4 bg-white border-b border-gray-200">
-      <Link
-        href="/"
-        className="text-xl font-bold"
-        style={{ color: "var(--primary)" }}
-      >
+    <nav className="flex justify-between items-center p-4 bg-[var(--background)] border-b border-gray-200">
+      <Link href="/" className="text-xl font-bold" style={{ color: "white" }}>
         RantOn
       </Link>
       <div className="flex items-center gap-4">
@@ -45,15 +41,15 @@ export default function Navbar() {
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <User size={20} style={{ color: "var(--primary)" }} />
+                <User size={20} style={{ color: "white" }} />
               )}
             </Link>
-            <button onClick={handleSignOut} className="btn-text">
+            <button onClick={handleSignOut} className=" text-white">
               Sign Out
             </button>
           </>
         ) : (
-          <Link href="/auth" className="btn-text">
+          <Link href="/auth" className=" text-white">
             Sign In
           </Link>
         )}
