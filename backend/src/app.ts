@@ -1,13 +1,13 @@
 import { urlencoded } from "body-parser";
 import cors from "cors";
+import dotenv from "dotenv";
 import express from "express";
-import comments from "./controllers/comments";
-import likes from "./controllers/likes";
-import rants from "./controllers/rants";
-import users from "./controllers/users";
-
+import comments from "./routes/comments";
+import likes from "./routes/likes";
+import rants from "./routes/rants";
+import users from "./routes/users";
 const app = express();
-
+dotenv.config();
 app.use(urlencoded({ extended: true }));
 app.use(cors());
 
