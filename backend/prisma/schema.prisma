@@ -1,0 +1,64 @@
+datasource db {
+  url      = env("DATABASE_URL")
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  u_id        String    @id @default(uuid())
+  firebaseId  String    @unique
+  email       String    @unique
+  username    String?
+  displayName String?
+  photoURL    String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  rants       Rant[]
+  comments    Comment[]
+  likes       Like[]
+}
+
+model Rant {
+  r_id String @id @default(uuid())
+
+  title   String
+  content String
+
+  authorId String
+  author   User   @relation(fields: [authorId], references: [u_id])
+
+  likes Like[]
+
+  comments Comment[]
+
+  @@unique([authorId, title])
+}
+
+model Comment {
+  c_id    String @id @default(uuid())
+  content String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  rantId String // The rant this comment belongs to
+  rant   Rant   @relation(fields: [rantId], references: [r_id])
+
+  commentedById String // The user who wrote the comment
+  commentedBy   User   @relation(fields: [commentedById], references: [u_id])
+}
+
+model Like {
+  l_id String @id @default(uuid())
+
+  likedRant   Rant   @relation(fields: [likedRantId], references: [r_id])
+  likedRantId String
+
+  likedBy   User   @relation(fields: [likedById], references: [u_id])
+  likedById String
+
+  @@unique([likedRantId, likedById])
+}
