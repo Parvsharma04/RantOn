@@ -6,7 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 import { Github, User } from "lucide-react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import {
   auth,
   createUserWithEmailAndPassword,
@@ -18,7 +18,15 @@ import {
   signOut,
 } from "../../firebase";
 
-export default function AuthPage() {
+export default function Page() {
+  return (
+    <Suspense>
+      <AuthPage />
+    </Suspense>
+  );
+}
+
+function AuthPage() {
   const [user, setUser] = useState<any>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -31,8 +39,10 @@ export default function AuthPage() {
   const context = useAuth();
   useEffect(() => {
     if (context.user) {
-      setUser(context.user);
-      router.push(redirectPath);
+      setUser(context.user && !context.loading);
+      setTimeout(() => {
+        router.push(redirectPath);
+      }, 100);
     }
   }, [setUser, user, context.loading]);
 
