@@ -11,9 +11,8 @@ const robotoMono = Roboto_Mono({
 });
 
 export const metadata = {
-  title: "Minimalist Discussions",
-  description: "A simple discussions platform",
-  generator: "v0.dev",
+  title: "RantOn - Rant Away 😩",
+  description: "Rant away on RantOn with your silliest thoughts.",
 };
 
 export default function RootLayout({

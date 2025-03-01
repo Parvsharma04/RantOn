@@ -22,9 +22,12 @@ export default function Navbar() {
 
   return (
     <nav className="flex justify-between items-center p-4 bg-[var(--background)] border-b border-gray-200">
-      <Link href="/" className="text-xl font-bold" style={{ color: "white" }}>
-        RantOn
-      </Link>
+      <div className="flex gap-4 items-center">
+        <Image src="/logo.png" alt="BRUHH" width={40} height={40} quality={100}/>
+        <Link href="/" className="text-3xl font-bold" style={{ color: "white" }}>
+          RantOn
+        </Link>
+      </div>
       <div className="flex items-center gap-4">
         {user ? (
           <>
