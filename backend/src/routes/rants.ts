@@ -8,6 +8,10 @@ import {
 import { authenticateUser } from "../middlewares/authMiddleware";
 
 const router = express.Router();
+router.get("/", (req, res) => {
+  console.log("Rants route hit!");
+  res.send("Rants route is working!");
+});
 
 router.get("/", getAllRants);
 router.get("/:id", getRant);

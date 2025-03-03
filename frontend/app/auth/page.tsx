@@ -3,6 +3,7 @@
 import type React from "react";
 
 import { useAuth } from "@/context/AuthContext";
+import axios from "axios";
 import { Github, User } from "lucide-react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -39,6 +40,19 @@ function AuthPage() {
   const context = useAuth();
   useEffect(() => {
     if (context.user) {
+      const user = {
+        firebaseid: context.user.uid,
+        displayName: context.user.displayName,
+        email: context.user.email,
+        photo: context.user.photoURL,
+        isAnonymous: context.user.isAnonymous,
+        idToken: context.userToken,
+      };
+      const response = axios.post(
+        `${process.env.NEXT_PUBLIC_LOCAL_BACKEND_URL}/users/auth`,
+        user
+      );
+      console.log(context.user, response);
       setUser(context.user && !context.loading);
       setTimeout(() => {
         router.push(redirectPath);
@@ -51,6 +65,8 @@ function AuthPage() {
     setIsLoading(true);
     try {
       const result = await signInWithPopup(auth, googleProvider);
+      const token = await result.user.getIdToken();
+      context.setUserToken(token);
       setUser(result.user);
     } catch (error: any) {
       setError(error.message);
@@ -65,6 +81,8 @@ function AuthPage() {
     try {
       const result = await signInWithPopup(auth, githubProvider);
       setUser(result.user);
+      const token = await result.user.getIdToken();
+      context.setUserToken(token);
     } catch (error: any) {
       setError(error.message);
     } finally {
@@ -78,6 +96,8 @@ function AuthPage() {
     try {
       const result = await signInAnonymously(auth);
       setUser(result.user);
+      const token = await result.user.getIdToken();
+      context.setUserToken(token);
     } catch (error: any) {
       setError(error.message);
     } finally {
@@ -94,6 +114,8 @@ function AuthPage() {
         email,
         password
       );
+      const token = await result.user.getIdToken();
+      context.setUserToken(token);
       setUser(result.user);
     } catch (error: any) {
       setError(error.message);
@@ -107,6 +129,8 @@ function AuthPage() {
     setIsLoading(true);
     try {
       const result = await signInWithEmailAndPassword(auth, email, password);
+      const token = await result.user.getIdToken();
+      context.setUserToken(token);
       setUser(result.user);
     } catch (error: any) {
       setError(error.message);
@@ -121,6 +145,7 @@ function AuthPage() {
     try {
       await signOut(auth);
       setUser(null);
+      context.setUserToken("");
     } catch (error: any) {
       setError(error.message);
     } finally {

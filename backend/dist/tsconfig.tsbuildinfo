@@ -1,1 +1,1 @@
-{"root":["../src/app.ts","../src/controllers/comments.ts","../src/controllers/likes.ts","../src/controllers/rants.ts","../src/controllers/users.ts"],"version":"5.8.2"}
+{"root":["../src/app.ts","../src/firebase.ts","../src/prismaclient.ts","../src/controllers/comments.ts","../src/controllers/likes.ts","../src/controllers/rants.ts","../src/controllers/users.ts","../src/middlewares/authmiddleware.ts","../src/routes/comments.ts","../src/routes/likes.ts","../src/routes/rants.ts","../src/routes/users.ts"],"version":"5.8.2"}

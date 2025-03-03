@@ -14,14 +14,19 @@ import { auth } from "../firebase"; // Import existing auth instance
 const AuthContext = createContext<{
   user: FirebaseUser | null;
   loading: boolean;
+  userToken: string | null;
+  setUserToken: (token: string) => void;
 }>({
   user: null,
   loading: true, // Default loading state
+  userToken: null,
+  setUserToken: () => {},
 });
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [loading, setLoading] = useState(true); // Track loading state
+  const [userToken, setUserToken] = useState<string | null>(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(
@@ -66,7 +71,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading }}>
+    <AuthContext.Provider value={{ user, loading, userToken, setUserToken }}>
       {children}
     </AuthContext.Provider>
   );
