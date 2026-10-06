@@ -48,11 +48,11 @@ function AuthPage() {
         isAnonymous: context.user.isAnonymous,
         idToken: context.userToken,
       };
-      const response = axios.post(
+      axios.post(
         `${process.env.NEXT_PUBLIC_LOCAL_BACKEND_URL}/users/auth`,
         user
       );
-      console.log(context.user, response);
+      
       setUser(context.user && !context.loading);
       setTimeout(() => {
         router.push(redirectPath);
@@ -66,7 +66,7 @@ function AuthPage() {
     try {
       const result = await signInWithPopup(auth, googleProvider);
       const token = await result.user.getIdToken();
-      context.setUserToken(token);
+      context.saveToken(token);
       setUser(result.user);
     } catch (error: any) {
       setError(error.message);
@@ -82,7 +82,7 @@ function AuthPage() {
       const result = await signInWithPopup(auth, githubProvider);
       setUser(result.user);
       const token = await result.user.getIdToken();
-      context.setUserToken(token);
+      context.saveToken(token);
     } catch (error: any) {
       setError(error.message);
     } finally {
@@ -97,7 +97,7 @@ function AuthPage() {
       const result = await signInAnonymously(auth);
       setUser(result.user);
       const token = await result.user.getIdToken();
-      context.setUserToken(token);
+      context.saveToken(token);
     } catch (error: any) {
       setError(error.message);
     } finally {
@@ -115,7 +115,7 @@ function AuthPage() {
         password
       );
       const token = await result.user.getIdToken();
-      context.setUserToken(token);
+      context.saveToken(token);
       setUser(result.user);
     } catch (error: any) {
       setError(error.message);
@@ -130,7 +130,7 @@ function AuthPage() {
     try {
       const result = await signInWithEmailAndPassword(auth, email, password);
       const token = await result.user.getIdToken();
-      context.setUserToken(token);
+      context.saveToken(token);
       setUser(result.user);
     } catch (error: any) {
       setError(error.message);
@@ -144,8 +144,9 @@ function AuthPage() {
     setIsLoading(true);
     try {
       await signOut(auth);
+      console.log('calling for token wipe')
+      context.logOut();
       setUser(null);
-      context.setUserToken("");
     } catch (error: any) {
       setError(error.message);
     } finally {

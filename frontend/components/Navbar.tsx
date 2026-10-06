@@ -4,21 +4,10 @@ import { useAuth } from "@/context/AuthContext";
 import { User } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { auth, signOut } from "../firebase";
 
 export default function Navbar() {
-  const router = useRouter();
-  const user = useAuth().user;
-
-  const handleSignOut = async () => {
-    try {
-      await signOut(auth);
-      router.push("/");
-    } catch (error) {
-      console.error("Error signing out:", error);
-    }
-  };
+  const auth = useAuth();
+  const { user } = auth;
 
   return (
     <nav className="flex justify-between items-center p-4 bg-[var(--background)] border-b border-gray-200">
@@ -47,7 +36,7 @@ export default function Navbar() {
                 <User size={20} style={{ color: "white" }} />
               )}
             </Link>
-            <button onClick={handleSignOut} className=" text-white">
+            <button onClick={auth.logOut} className=" text-white">
               Sign Out
             </button>
           </>
