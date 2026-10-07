@@ -11,6 +11,7 @@ import {
 } from "react";
 import { auth, signOut } from "../firebase"; // Import existing auth instance
 import { useRouter } from "next/navigation";
+import axios from "axios";
 
 const AuthContext = createContext<{
   user: FirebaseUser | null;
@@ -18,13 +19,24 @@ const AuthContext = createContext<{
   userToken: string | null;
   saveToken: (token: string) => void;
   logOut: () => void;
+  postLogin: (user: any) => void;
 }>({
   user: null,
   loading: true, // Default loading state
   userToken: null,
   saveToken: (_token: string) => {},
   logOut: () => {},
+  postLogin: (_user: any) => {},
 });
+
+export interface UserInterface {
+  firebaseId: string;
+  displayName: string;
+  email?: string | null;
+  photo?: string | null;
+  isAnonymous?: boolean | null;
+  idToken: unknown;
+}
 
 const TOKEN="fb-rant-access";
 
@@ -48,6 +60,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     await signOut(auth);
     console.log('bye buddy')
     router.push('/')
+  }
+
+  
+  const postLogin = async function(user: UserInterface) {
+    const response = await axios.post(
+      `${process.env.NEXT_PUBLIC_LOCAL_BACKEND_URL}/users/auth`,
+        user
+      );  
+      console.log(response.data);
+      saveToken(response.data.token);
   }
 
   useEffect(() => {
@@ -79,13 +101,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             },
             apiKey: "",
             appName: "",
-          };
-
+          };  
+          
+          postLogin({
+            firebaseId: transformedUser.uid,
+            displayName: transformedUser.displayName,
+            email: transformedUser.email,
+            photo: transformedUser.photoURL,
+            isAnonymous: transformedUser.isAnonymous,
+            idToken: await firebaseUser.getIdToken(),
+          })
           setUser(transformedUser);
         } else {
           setUser(null);
         }
-        setLoading(false); // ✅ Set loading to false after user is set
+        setLoading(false); 
       }
     );
 
@@ -93,7 +123,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading, userToken, saveToken, logOut }}>
+    <AuthContext.Provider value={{ user, loading, userToken, saveToken, logOut, postLogin }}>
       {children}
     </AuthContext.Provider>
   );

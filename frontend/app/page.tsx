@@ -1,58 +1,38 @@
 "use client";
 
 import type React from "react";
-
 import { useAuth } from "@/context/AuthContext";
-import { MessageSquare, Share2 } from "lucide-react";
+import { Heart, MessageSquare, Share2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import axios from "axios";
 
 type Rant = {
-  id: number;
+  id: string;
   title: string;
   content: string;
-  author: string;
-  date: string;
+  author?: string;
+  date?: string;
   comments: Comment[];
+  likes: Like[];
 };
 
+type Like = {
+  id: string;
+}
+
 type Comment = {
-  id: number;
+  id: string;
   author: string;
   content: string;
   date: string;
 };
 
 export default function Home() {
-  const user = useAuth().user;
-  const [rants, setRants] = useState<Rant[]>([
-    {
-      id: 1,
-      title: "Minimalism in Web Design",
-      content:
-        "What are your thoughts on minimalist web design? I find it creates a better user experience.",
-      author: "Alex",
-      date: "2 hours ago",
-      comments: [
-        {
-          id: 1,
-          author: "Sam",
-          content: "I agree. Less is more when it comes to user interfaces.",
-          date: "1 hour ago",
-        },
-      ],
-    },
-    {
-      id: 2,
-      title: "Best Programming Languages for 2025",
-      content:
-        "Which programming languages do you think will be most relevant in the coming years?",
-      author: "Taylor",
-      date: "5 hours ago",
-      comments: [],
-    },
-  ]);
-  const [newComments, setNewComments] = useState<Record<number, string>>({});
+  const auth = useAuth();
+  const { user } = auth; 
+  const [rants, setRants] = useState<Rant[]>([]);
+  const [newComments, setNewComments] = useState<Record<string, string>>({});
 
   const [newRant, setNewRant] = useState({
     title: "",
@@ -60,9 +40,9 @@ export default function Home() {
   });
 
   const router = useRouter();
-  const [activeRant, setActiveRant] = useState<number | null>(null);
+  const [activeRant, setActiveRant] = useState<string | null>(null);
 
-  const handleAddRant = (e: React.FormEvent) => {
+  const handleAddRant = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newRant.title || !newRant.content) return;
     if (!user) {
@@ -71,21 +51,34 @@ export default function Home() {
       );
       return;
     }
-
-    const discussion: Rant = {
-      id: rants.length + 1,
-      title: newRant.title,
-      content: newRant.content,
-      author: "You",
-      date: "Just now",
+   
+    const response = await axios.post(
+      `${process.env.NEXT_PUBLIC_LOCAL_BACKEND_URL}/rants`, 
+      {
+        title: newRant.title,
+        content: newRant.content,
+      },
+      {
+        headers: {
+          'Authorization': 'Bearer ' + auth.userToken, 
+        }, 
+    });
+      
+    const newPost = {
+      id: response.data.r_id,
+      title: response.data.title,
+      content: response.data.content,
+      author: auth.user?.displayName,
+      date: new Date(response.data.createdAt).toLocaleString(),
       comments: [],
-    };
+      likes: [],
+    }
 
-    setRants([discussion, ...rants]);
+    setRants([newPost, ...rants]);
     setNewRant({ title: "", content: "" });
   };
 
-  const handleAddComment = (discussionId: number) => {
+  const handleAddComment = (discussionId: string) => {
     if (!newComments[discussionId]) return;
 
     const updatedDiscussions = rants.map((discussion) => {
@@ -95,7 +88,7 @@ export default function Home() {
           comments: [
             ...discussion.comments,
             {
-              id: discussion.comments.length + 1,
+              id: String(discussion.comments.length + 1),
               author: "You",
               content: newComments[discussionId],
               date: "Just now",
@@ -110,13 +103,13 @@ export default function Home() {
     setNewComments({ ...newComments, [discussionId]: "" });
   };
 
-  const handleShare = (discussionId: number) => {
+  const handleShare = (discussionId: string) => {
     alert(
       `Link copied to clipboard! (This would actually copy a link to discussion #${discussionId} in a real app)`
     );
   };
 
-  const toggleComments = (discussionId: number) => {
+  const toggleComments = (discussionId: string) => {
     setActiveRant(activeRant === discussionId ? null : discussionId);
   };
 
@@ -158,15 +151,36 @@ export default function Home() {
         {rants.map((discussion) => (
           <div
             key={discussion.id}
-            className="p-4 border border-solid border-gray-200"
+            className="rounded-lg border border-solid p-4"
+            style={{ borderColor: "var(--border)" }}
           >
-            <h2 className="text-lg font-bold mb-1">{discussion.title}</h2>
-            <p className="text-sm mb-4">{discussion.content}</p>
-            <div className="flex justify-between items-center text-xs text-gray-500 mb-2">
+            <h2 className="text-lg font-bold">{discussion.title}</h2>
+            <div
+              className="mb-3 mt-2 h-1 w-12 rounded-full"
+              style={{ backgroundColor: "var(--primary)" }}
+            />
+            <p className="text-sm leading-6">{discussion.content}</p>
+            <div
+              className="mb-4 mt-3 h-px w-full opacity-40"
+              style={{ backgroundColor: "var(--primary)" }}
+            />
+            <div
+              className="mb-2 flex items-center justify-between text-xs"
+              style={{ color: "var(--muted-foreground)" }}
+            >
               <span>
                 {discussion.author} • {discussion.date}
               </span>
-              <div className="flex gap-4">
+            </div>
+            <div> 
+              <div className="flex gap-4 justify-between py-2">
+                <button
+                  className="btn-text flex items-center gap-1"
+                  onClick={()=>console.log('show likes')}
+                >  
+                  <Heart size={16} />
+                  {discussion?.likes?.length}
+                </button>
                 <button
                   className="btn-text flex items-center gap-1"
                   onClick={() => toggleComments(discussion.id)}
@@ -183,7 +197,6 @@ export default function Home() {
                 </button>
               </div>
             </div>
-
             {activeRant === discussion.id && (
               <div className="mt-4 pt-4 border-t border-gray-200">
                 {discussion.comments.length > 0 ? (

@@ -24,10 +24,26 @@ export const getRant = async (req: Request, res: Response) => {
   }
 };
 
-export const createRant = async (req: Request, res: Response) => {
+interface CreateRant {
+  body: {
+    title: string,
+    content: string,
+  },
+  user: {
+    u_id: string;
+  },
+}
+
+export const createRant = async (req: CreateRant, res: Response) => {
   try {
+    const { title, content } = req.body;
+    console.log(req.body, req.user);
     const rant = await prisma.rant.create({
-      data: { ...req.body, authorId: (req as any).user.u_id },
+      data: { 
+        title,
+        content,
+        authorId: req.user.u_id
+      },
     });
     res.json(rant);
   } catch (error) {
