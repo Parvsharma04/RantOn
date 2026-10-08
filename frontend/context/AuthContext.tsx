@@ -50,9 +50,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const saveToken = (token: string): void => {
     setUserToken(token);
     localStorage.setItem(TOKEN, token);
-
-    //checking
-    console.log("this yo token bitch: ", localStorage.getItem(TOKEN));
   } 
 
   const logOut = async (): Promise<void> => {
@@ -68,7 +65,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       `${process.env.NEXT_PUBLIC_LOCAL_BACKEND_URL}/users/auth`,
         user
       );  
-      console.log(response.data);
       saveToken(response.data.token);
   }
 

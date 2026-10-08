@@ -2,6 +2,7 @@ import { Roboto_Mono } from "next/font/google";
 import type React from "react";
 import Navbar from "../components/Navbar";
 import { AuthProvider } from "../context/AuthContext";
+import { RantProvider } from "../context/RantContext";
 import "./globals.css";
 
 const robotoMono = Roboto_Mono({
@@ -24,8 +25,10 @@ export default function RootLayout({
     <html lang="en">
       <body className={robotoMono.className}>
         <AuthProvider>
-          <Navbar />
-          {children}
+          <RantProvider>
+            <Navbar />
+            {children}
+          </RantProvider>
         </AuthProvider>
       </body>
     </html>
