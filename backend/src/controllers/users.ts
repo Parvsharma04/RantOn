@@ -56,7 +56,10 @@ export const auth = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
-export const getUser = async (req: Request, res: Response): Promise<void> => {
+export const getUser = async (
+  req: Request<{ id: string }>,
+  res: Response
+): Promise<void> => {
   try {
     const user = await prisma.user.findUnique({
       where: { u_id: req.params.id },

@@ -1,10 +1,17 @@
 import { Request, Response } from "express";
 import prisma from "../prismaClient";
 
-export const likeRant = async (req: Request, res: Response) => {
+type IdParams = { id: string };
+
+export const likeRant = async (req: Request<IdParams>, res: Response) => {
   try {
+    if (!req.user) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
     const like = await prisma.like.create({
-      data: { likedRantId: req.params.id, likedById: (req as any).user.u_id },
+      data: { likedRantId: req.params.id, likedById: req.user.u_id },
     });
     res.json(like);
   } catch (error) {
@@ -12,13 +19,18 @@ export const likeRant = async (req: Request, res: Response) => {
   }
 };
 
-export const unlikeRant = async (req: Request, res: Response) => {
+export const unlikeRant = async (req: Request<IdParams>, res: Response) => {
   try {
+    if (!req.user) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
     await prisma.like.delete({
       where: {
         likedRantId_likedById: {
           likedRantId: req.params.id,
-          likedById: (req as any).user.u_id,
+          likedById: req.user.u_id,
         },
       },
     });

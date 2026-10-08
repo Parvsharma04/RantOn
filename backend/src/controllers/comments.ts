@@ -1,7 +1,9 @@
 import { Request, Response } from "express";
 import prisma from "../prismaClient";
 
-export const getRantComments = async (req: Request, res: Response) => {
+type IdParams = { id: string };
+
+export const getRantComments = async (req: Request<IdParams>, res: Response) => {
   try {
     const comments = await prisma.comment.findMany({
       where: { rantId: req.params.id },
@@ -13,12 +15,17 @@ export const getRantComments = async (req: Request, res: Response) => {
   }
 };
 
-export const addComment = async (req: Request, res: Response) => {
+export const addComment = async (req: Request<IdParams>, res: Response) => {
   try {
+    if (!req.user) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
     const comment = await prisma.comment.create({
       data: {
         ...req.body,
-        commentedById: (req as any).user.u_id,
+        commentedById: req.user.u_id,
         rantId: req.params.id,
       },
     });
@@ -28,10 +35,15 @@ export const addComment = async (req: Request, res: Response) => {
   }
 };
 
-export const deleteComment = async (req: Request, res: Response) => {
+export const deleteComment = async (req: Request<IdParams>, res: Response) => {
   try {
+    if (!req.user) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
     await prisma.comment.delete({
-      where: { c_id: req.params.id, commentedById: (req as any).user.u_id },
+      where: { c_id: req.params.id, commentedById: req.user.u_id },
     });
     res.json({ message: "Comment deleted" });
   } catch (error) {
