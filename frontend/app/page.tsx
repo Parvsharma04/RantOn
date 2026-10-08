@@ -1,123 +1,50 @@
 "use client";
 
 import type React from "react";
-
 import { useAuth } from "@/context/AuthContext";
-import { MessageSquare, Share2 } from "lucide-react";
+import {
+  useRantActions,
+  useRantComments,
+  type Rant,
+} from "@/context/RantContext";
+import { Heart, MessageSquare, Share2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-type Rant = {
-  id: number;
-  title: string;
-  content: string;
-  author: string;
-  date: string;
-  comments: Comment[];
-};
-
-type Comment = {
-  id: number;
-  author: string;
-  content: string;
-  date: string;
-};
-
 export default function Home() {
-  const user = useAuth().user;
-  const [rants, setRants] = useState<Rant[]>([
-    {
-      id: 1,
-      title: "Minimalism in Web Design",
-      content:
-        "What are your thoughts on minimalist web design? I find it creates a better user experience.",
-      author: "Alex",
-      date: "2 hours ago",
-      comments: [
-        {
-          id: 1,
-          author: "Sam",
-          content: "I agree. Less is more when it comes to user interfaces.",
-          date: "1 hour ago",
-        },
-      ],
-    },
-    {
-      id: 2,
-      title: "Best Programming Languages for 2025",
-      content:
-        "Which programming languages do you think will be most relevant in the coming years?",
-      author: "Taylor",
-      date: "5 hours ago",
-      comments: [],
-    },
-  ]);
-  const [newComments, setNewComments] = useState<Record<number, string>>({});
-
+  const { user } = useAuth();
+  const { rants, isLoading, feedError, createRant } = useRantActions();
   const [newRant, setNewRant] = useState({
     title: "",
     content: "",
   });
-
   const router = useRouter();
-  const [activeRant, setActiveRant] = useState<number | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
-  const handleAddRant = (e: React.FormEvent) => {
+  const handleAddRant = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newRant.title || !newRant.content) return;
+    if (!newRant.title.trim() || !newRant.content.trim()) return;
     if (!user) {
       router.push(
         `/auth?redirect=${encodeURIComponent(window.location.pathname)}`
       );
       return;
     }
-
-    const discussion: Rant = {
-      id: rants.length + 1,
-      title: newRant.title,
-      content: newRant.content,
-      author: "You",
-      date: "Just now",
-      comments: [],
-    };
-
-    setRants([discussion, ...rants]);
-    setNewRant({ title: "", content: "" });
+    setActionError(null);
+    try {
+      await createRant(newRant);
+      setNewRant({ title: "", content: "" });
+    } catch (error) {
+      setActionError(
+        error instanceof Error ? error.message : "Unable to create rant"
+      );
+    }
   };
 
-  const handleAddComment = (discussionId: number) => {
-    if (!newComments[discussionId]) return;
-
-    const updatedDiscussions = rants.map((discussion) => {
-      if (discussion.id === discussionId) {
-        return {
-          ...discussion,
-          comments: [
-            ...discussion.comments,
-            {
-              id: discussion.comments.length + 1,
-              author: "You",
-              content: newComments[discussionId],
-              date: "Just now",
-            },
-          ],
-        };
-      }
-      return discussion;
-    });
-
-    setRants(updatedDiscussions);
-    setNewComments({ ...newComments, [discussionId]: "" });
-  };
-
-  const handleShare = (discussionId: number) => {
+  const handleShare = (discussionId: string) => {
     alert(
       `Link copied to clipboard! (This would actually copy a link to discussion #${discussionId} in a real app)`
     );
-  };
-
-  const toggleComments = (discussionId: number) => {
-    setActiveRant(activeRant === discussionId ? null : discussionId);
   };
 
   return (
@@ -154,78 +81,164 @@ export default function Home() {
         </button>
       </form>
 
+      {actionError && (
+        <p role="alert" className="mb-4 text-sm text-red-600">
+          {actionError}
+        </p>
+      )}
+      {feedError && (
+        <p role="alert" className="mb-4 text-sm text-red-600">
+          Unable to load the feed: {feedError.message}
+        </p>
+      )}
+      {isLoading && <p className="mb-4 text-sm">Loading rants...</p>}
+
       <div className="space-y-6">
-        {rants.map((discussion) => (
-          <div
-            key={discussion.id}
-            className="p-4 border border-solid border-gray-200"
-          >
-            <h2 className="text-lg font-bold mb-1">{discussion.title}</h2>
-            <p className="text-sm mb-4">{discussion.content}</p>
-            <div className="flex justify-between items-center text-xs text-gray-500 mb-2">
-              <span>
-                {discussion.author} • {discussion.date}
-              </span>
-              <div className="flex gap-4">
-                <button
-                  className="btn-text flex items-center gap-1"
-                  onClick={() => toggleComments(discussion.id)}
-                >
-                  <MessageSquare size={16} />
-                  {discussion.comments.length}
-                </button>
-                <button
-                  className="btn-text flex items-center gap-1"
-                  onClick={() => handleShare(discussion.id)}
-                >
-                  <Share2 size={16} />
-                  Share
-                </button>
-              </div>
-            </div>
-
-            {activeRant === discussion.id && (
-              <div className="mt-4 pt-4 border-t border-gray-200">
-                {discussion.comments.length > 0 ? (
-                  <div className="space-y-3 mb-4">
-                    {discussion.comments.map((comment) => (
-                      <div key={comment.id} className="text-sm p-2 bg-gray-50">
-                        <p>{comment.content}</p>
-                        <p className="text-xs text-gray-500 mt-1">
-                          {comment.author} • {comment.date}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-sm text-gray-500 mb-4">No comments yet</p>
-                )}
-
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    placeholder="Add a comment..."
-                    className="input flex-1"
-                    value={newComments[discussion.id] || ""}
-                    onChange={(e) =>
-                      setNewComments({
-                        ...newComments,
-                        [discussion.id]: e.target.value,
-                      })
-                    }
-                  />
-                  <button
-                    className="btn"
-                    onClick={() => handleAddComment(discussion.id)}
-                  >
-                    Comment
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
+        {rants.map((rant) => (
+          <RantCard
+            key={rant.id}
+            rant={rant}
+            onShare={handleShare}
+            onSignIn={() =>
+              router.push(
+                `/auth?redirect=${encodeURIComponent(window.location.pathname)}`
+              )
+            }
+            isSignedIn={Boolean(user)}
+          />
         ))}
       </div>
     </main>
+  );
+}
+
+function RantCard({
+  rant,
+  onShare,
+  onSignIn,
+  isSignedIn,
+}: {
+  rant: Rant;
+  onShare: (rantId: string) => void;
+  onSignIn: () => void;
+  isSignedIn: boolean;
+}) {
+  const { addComment } = useRantActions();
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [comment, setComment] = useState("");
+  const [commentError, setCommentError] = useState<string | null>(null);
+  const commentsQuery = useRantComments(rant.id, isExpanded);
+
+  const handleAddComment = async () => {
+    if (!comment.trim()) return;
+    if (!isSignedIn) {
+      onSignIn();
+      return;
+    }
+
+    setCommentError(null);
+    try {
+      await addComment(rant.id, comment.trim());
+      setComment("");
+    } catch (error) {
+      setCommentError(
+        error instanceof Error ? error.message : "Unable to add comment"
+      );
+    }
+  };
+
+  const comments = commentsQuery.data || [];
+
+  return (
+    <div
+      className="rounded-lg border border-solid p-4"
+      style={{ borderColor: "var(--border)" }}
+    >
+      <h2 className="text-lg font-bold">{rant.title}</h2>
+      <div
+        className="mb-3 mt-2 h-1 w-12 rounded-full"
+        style={{ backgroundColor: "var(--primary)" }}
+      />
+      <p className="text-sm leading-6">{rant.content}</p>
+      <div
+        className="mb-4 mt-3 h-px w-full opacity-40"
+        style={{ backgroundColor: "var(--primary)" }}
+      />
+      <div
+        className="mb-2 flex items-center justify-between text-xs"
+        style={{ color: "var(--muted-foreground)" }}
+      >
+        <span>
+          {rant.author} • {rant.date}
+        </span>
+      </div>
+      <div className="flex justify-between gap-4 py-2">
+        <button className="btn-text flex items-center gap-1" type="button">
+          <Heart size={16} />
+          {rant.likes.length}
+        </button>
+        <button
+          className="btn-text flex items-center gap-1"
+          type="button"
+          onClick={() => setIsExpanded((expanded) => !expanded)}
+        >
+          <MessageSquare size={16} />
+          {comments.length}
+        </button>
+        <button
+          className="btn-text flex items-center gap-1"
+          type="button"
+          onClick={() => onShare(rant.id)}
+        >
+          <Share2 size={16} />
+          Share
+        </button>
+      </div>
+      {isExpanded && (
+        <div className="mt-4 border-t border-gray-200 pt-4">
+          {commentsQuery.isLoading ? (
+            <p className="mb-4 text-sm">Loading comments...</p>
+          ) : commentsQuery.error ? (
+            <p role="alert" className="mb-4 text-sm text-red-600">
+              Unable to load comments: {commentsQuery.error.message}
+            </p>
+          ) : comments.length ? (
+            <div className="mb-4 space-y-3">
+              {comments.map((item) => (
+                <div key={item.id} className="bg-gray-50 p-2 text-sm">
+                  <p>{item.content}</p>
+                  <p className="mt-1 text-xs text-gray-500">
+                    {item.author} • {item.date}
+                  </p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="mb-4 text-sm text-gray-500">No comments yet</p>
+          )}
+          {commentError && (
+            <p role="alert" className="mb-2 text-sm text-red-600">
+              {commentError}
+            </p>
+          )}
+          <div className="flex gap-2">
+            <input
+              type="text"
+              placeholder="Add a comment..."
+              className="input flex-1"
+              value={comment}
+              onChange={(event) => setComment(event.target.value)}
+            />
+            <button
+              className="btn"
+              type="button"
+              onClick={handleAddComment}
+            >
+              Comment
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
