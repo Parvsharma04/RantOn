@@ -1,6 +1,8 @@
 import { Request, Response } from "express";
 import prisma from "../prismaClient";
 
+type IdParams = { id: string };
+
 export const getAllRants = async (req: Request, res: Response) => {
   try {
     const rants = await prisma.rant.findMany({
@@ -12,7 +14,7 @@ export const getAllRants = async (req: Request, res: Response) => {
   }
 };
 
-export const getRant = async (req: Request, res: Response) => {
+export const getRant = async (req: Request<IdParams>, res: Response) => {
   try {
     const rant = await prisma.rant.findUnique({
       where: { r_id: req.params.id },
@@ -24,20 +26,14 @@ export const getRant = async (req: Request, res: Response) => {
   }
 };
 
-interface CreateRant {
-  body: {
-    title: string,
-    content: string,
-  },
-  user: {
-    u_id: string;
-  },
-}
-
-export const createRant = async (req: CreateRant, res: Response) => {
+export const createRant = async (req: Request, res: Response) => {
   try {
+    if (!req.user) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
     const { title, content } = req.body;
-    console.log(req.body, req.user);
     const rant = await prisma.rant.create({
       data: { 
         title,
@@ -51,10 +47,15 @@ export const createRant = async (req: CreateRant, res: Response) => {
   }
 };
 
-export const deleteRant = async (req: Request, res: Response) => {
+export const deleteRant = async (req: Request<IdParams>, res: Response) => {
   try {
+    if (!req.user) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
     await prisma.rant.delete({
-      where: { r_id: req.params.id, authorId: (req as any).user.u_id },
+      where: { r_id: req.params.id, authorId: req.user.u_id },
     });
     res.json({ message: "Rant deleted" });
   } catch (error) {
