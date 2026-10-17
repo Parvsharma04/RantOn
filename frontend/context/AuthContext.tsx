@@ -20,6 +20,7 @@ const AuthContext = createContext<{
   saveToken: (token: string) => void;
   logOut: () => void;
   postLogin: (user: any) => void;
+  userId: string | null;
 }>({
   user: null,
   loading: true, // Default loading state
@@ -27,6 +28,7 @@ const AuthContext = createContext<{
   saveToken: (_token: string) => {},
   logOut: () => {},
   postLogin: (_user: any) => {},
+  userId: null
 });
 
 export interface UserInterface {
@@ -42,6 +44,7 @@ const TOKEN="fb-rant-access";
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<FirebaseUser | null>(null);
+  const [userid, setUserid] = useState<string | null>(null);
   const [loading, setLoading] = useState(true); // Track loading state
   const [userToken, setUserToken] = useState<string | null>(null);
   const router = useRouter();
@@ -64,7 +67,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const response = await axios.post(
       `${process.env.NEXT_PUBLIC_LOCAL_BACKEND_URL}/users/auth`,
         user
-      );  
+      );
+      setUserid(response.data.user.u_id);
       saveToken(response.data.token);
   }
 
@@ -119,7 +123,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading, userToken, saveToken, logOut, postLogin }}>
+    <AuthContext.Provider value={{ user, loading, userToken, saveToken, logOut, postLogin, userId: userid }}>
       {children}
     </AuthContext.Provider>
   );
