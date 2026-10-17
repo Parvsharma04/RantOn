@@ -9,7 +9,7 @@ import {
 } from "@/context/RantContext";
 import { Heart, MessageSquare, Share2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export default function Home() {
   const { user } = useAuth();
@@ -123,11 +123,18 @@ function RantCard({
   onSignIn: () => void;
   isSignedIn: boolean;
 }) {
-  const { addComment } = useRantActions();
+  const { addComment, likeRant, unlikeRant } = useRantActions();
   const [isExpanded, setIsExpanded] = useState(false);
   const [comment, setComment] = useState("");
   const [commentError, setCommentError] = useState<string | null>(null);
   const commentsQuery = useRantComments(rant.id, isExpanded);
+  const { userId } = useAuth()
+  const [isLiked, setIsLiked] = useState<boolean>(false);
+
+  useEffect(()=>{
+    const liked = rant.likes.some((e) => e.likedById === userId);
+    setIsLiked(liked);
+  }, [])
 
   const handleAddComment = async () => {
     if (!comment.trim()) return;
@@ -143,6 +150,38 @@ function RantCard({
     } catch (error) {
       setCommentError(
         error instanceof Error ? error.message : "Unable to add comment"
+      );
+    }
+  };
+
+  const handleUnlike = async () => {
+    if (!isSignedIn) {
+      onSignIn();
+      return;
+    }
+    try {
+      unlikeRant(rant.id);
+      setIsLiked(false);
+      setComment("");
+    } catch (error) {
+      setCommentError(
+        error instanceof Error ? error.message : "Unable to like rant"
+      );
+    }
+  };
+
+  const handleLike = async () => {
+    if (!isSignedIn) {
+      onSignIn();
+      return;
+    }
+    try {
+      likeRant(rant.id);
+      setIsLiked(true);
+      setComment("");
+    } catch (error) {
+      setCommentError(
+        error instanceof Error ? error.message : "Unable to like rant"
       );
     }
   };
@@ -173,8 +212,15 @@ function RantCard({
         </span>
       </div>
       <div className="flex justify-between gap-4 py-2">
-        <button className="btn-text flex items-center gap-1" type="button">
-          <Heart size={16} />
+        <button
+          className="btn-text flex items-center gap-1"
+          type="button"
+          onClick={isLiked ? handleUnlike : handleLike}
+        >
+          <Heart
+            size={16}
+            className={`icon-button ${isLiked ? "liked" : ""}`}
+          />
           {rant.likes.length}
         </button>
         <button

@@ -22,8 +22,15 @@ export type Rant = {
   content: string;
   author: string;
   date: string;
-  likes: { id: string }[];
+  likes: Like[];
 };
+
+export type Like = {
+  id: string;
+  updatedAt: string;
+  likedById: string;
+};
+
 
 export type RantComment = {
   id: string;
@@ -49,8 +56,14 @@ type ApiRant = {
   content: string;
   createdAt: string;
   author?: { displayName?: string | null };
-  likes?: { l_id: string }[];
+  likes?: ApiLike[];
 };
+
+type ApiLike = {
+  l_id: string;
+  updatedAt: string;
+  likedById: string;
+}
 
 type ApiComment = {
   c_id: string;
@@ -86,7 +99,11 @@ function toRant(rant: ApiRant): Rant {
     content: rant.content,
     author: rant.author?.displayName || "Anonymous",
     date: new Date(rant.createdAt).toLocaleString(),
-    likes: (rant.likes || []).map((like) => ({ id: like.l_id })),
+    likes: (rant.likes || []).map((like) => ({
+      id: like.l_id, 
+      updatedAt: like.updatedAt, 
+      likedById: like.likedById 
+    })),
   };
 }
 
