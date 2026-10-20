@@ -23,6 +23,7 @@ export type Rant = {
   author: string;
   date: string;
   likes: Like[];
+  commentCount: number;
 };
 
 export type Like = {
@@ -57,6 +58,7 @@ type ApiRant = {
   createdAt: string;
   author?: { displayName?: string | null };
   likes?: ApiLike[];
+  _count?: { comments?: number };
 };
 
 type ApiLike = {
@@ -104,6 +106,7 @@ function toRant(rant: ApiRant): Rant {
       updatedAt: like.updatedAt, 
       likedById: like.likedById 
     })),
+    commentCount: rant._count?.comments!,
   };
 }
 

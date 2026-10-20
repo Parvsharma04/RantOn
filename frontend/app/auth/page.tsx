@@ -6,6 +6,7 @@ import { Github, User } from "lucide-react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
+import axios from "axios";
 import {
   auth,
   createUserWithEmailAndPassword,
@@ -30,6 +31,7 @@ function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [username, setUsername] = useState("");
   const [isSignUp, setIsSignUp] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
@@ -37,23 +39,60 @@ function AuthPage() {
   const redirectPath = searchParams.get("redirect") || "/";
   const context = useAuth();
   useEffect(() => {
-    if (context.user) {
-      context.postLogin({
-        firebaseid: context.user.uid,
-        displayName: context.user.displayName,
-        email: context.user.email,
-        photo: context.user.photoURL,
-        isAnonymous: context.user.isAnonymous,
-        idToken: context.userToken,
-      });
-      setUser(context.user && !context.loading);
-      setTimeout(() => {
-        router.push(redirectPath);
-      }, 100);
+    if (context.loading) return;
+    if (!context.user) {
+      setUser(null);
+      return;
     }
-  }, [setUser, user, context.loading]);
 
+    setUser(context.user);
+    if (context.needsUsername) return;
 
+    const timeout = window.setTimeout(() => {
+      router.push(redirectPath);
+    }, 100);
+    return () => window.clearTimeout(timeout);
+  }, [context.user, context.loading, context.needsUsername, redirectPath, router]);
+
+  useEffect(() => {
+    if (context.user && context.needsUsername) {
+      setUsername(context.user.isAnonymous ? "" : context.user.email.split("@")[0]);
+    }
+  }, [context.user, context.needsUsername]);
+
+  const handleUsernameSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setError(null);
+    setIsLoading(true);
+    try {
+      const submittedUsername =
+        username.trim() ||
+        (context.user?.isAnonymous ? "" : context.user?.email.split("@")[0] || "");
+      const candidate = submittedUsername.toLowerCase() || null;
+
+      if (candidate) {
+        const response = await axios.get(
+          `${process.env.NEXT_PUBLIC_LOCAL_BACKEND_URL}/users/username-availability`,
+          { params: { username: candidate } }
+        );
+        if (!response.data.available) {
+          setError("That username is already taken. Please choose another.");
+          return;
+        }
+      }
+
+      await context.updateUsername(candidate);
+      router.push(redirectPath);
+    } catch (error: any) {
+      setError(
+        error.response?.data?.error ||
+          error.message ||
+          "Unable to save your username"
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
   // Google Sign-In
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
@@ -166,6 +205,39 @@ function AuthPage() {
         </h1>
 
         {user ? (
+          context.needsUsername ? (
+            <form
+              onSubmit={handleUsernameSubmit}
+              className="p-6 border border-solid border-gray-200 grid gap-4"
+            >
+              <h2 className="text-lg font-bold">Choose your nickname</h2>
+              <p className="text-sm text-gray-500">
+                Your nickname will be your username. Leave it blank to continue
+                {context.user?.isAnonymous
+                  ? " anonymously"
+                  : " with your email prefix"}.
+              </p>
+              <input
+                type="text"
+                placeholder="Nickname"
+                value={username}
+                onChange={(event) => setUsername(event.target.value)}
+                className="input"
+                minLength={1}
+                maxLength={64}
+                pattern="[A-Za-z0-9._+-]{1,64}"
+                autoComplete="username"
+              />
+              <button type="submit" className="btn" disabled={isLoading}>
+                {isLoading ? "Saving..." : "Continue"}
+              </button>
+              {error && (
+                <div className="p-2 border border-red-300 bg-red-50 text-red-700 text-sm">
+                  {error}
+                </div>
+              )}
+            </form>
+          ) : (
           <div className="p-6 border border-solid border-gray-200 text-center">
             <div className="w-20 h-20 rounded-full mx-auto mb-4 overflow-hidden bg-gray-100 flex items-center justify-center">
               {user.photoURL ? (
@@ -181,7 +253,7 @@ function AuthPage() {
               )}
             </div>
             <h2 className="text-lg font-bold mb-1">
-              {user.displayName || "Anonymous User"}
+              {context.username || user.displayName || "Anonymous User"}
             </h2>
             <p className="text-sm mb-6 text-gray-500">
               {user.email || "No email address"}
@@ -198,6 +270,7 @@ function AuthPage() {
               )}
             </button>
           </div>
+          )
         ) : (
           <div className="p-6 border border-solid border-gray-200">
             <div className="grid gap-4 mb-6">

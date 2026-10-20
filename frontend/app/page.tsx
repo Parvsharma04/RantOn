@@ -130,11 +130,15 @@ function RantCard({
   const commentsQuery = useRantComments(rant.id, isExpanded);
   const { userId } = useAuth()
   const [isLiked, setIsLiked] = useState<boolean>(false);
+  const isLikedByCurrentUser = isSignedIn && isLiked;
 
-  useEffect(()=>{
-    const liked = rant.likes.some((e) => e.likedById === userId);
+  useEffect(() => {
+    const liked =
+      isSignedIn &&
+      userId !== null &&
+      rant.likes.some((like) => like.likedById === userId);
     setIsLiked(liked);
-  }, [])
+  }, [isSignedIn, userId, rant.likes]);
 
   const handleAddComment = async () => {
     if (!comment.trim()) return;
@@ -215,11 +219,11 @@ function RantCard({
         <button
           className="btn-text flex items-center gap-1"
           type="button"
-          onClick={isLiked ? handleUnlike : handleLike}
+          onClick={isLikedByCurrentUser ? handleUnlike : handleLike}
         >
           <Heart
             size={16}
-            className={`icon-button ${isLiked ? "liked" : ""}`}
+            className={`icon-button ${isLikedByCurrentUser ? "liked" : ""}`}
           />
           {rant.likes.length}
         </button>
@@ -229,7 +233,7 @@ function RantCard({
           onClick={() => setIsExpanded((expanded) => !expanded)}
         >
           <MessageSquare size={16} />
-          {comments.length}
+          {rant.commentCount || comments.length}
         </button>
         <button
           className="btn-text flex items-center gap-1"

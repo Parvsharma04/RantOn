@@ -21,6 +21,9 @@ const AuthContext = createContext<{
   logOut: () => void;
   postLogin: (user: any) => void;
   userId: string | null;
+  username: string | null;
+  needsUsername: boolean;
+  updateUsername: (username: string | null) => Promise<void>;
 }>({
   user: null,
   loading: true, // Default loading state
@@ -28,7 +31,10 @@ const AuthContext = createContext<{
   saveToken: (_token: string) => {},
   logOut: () => {},
   postLogin: (_user: any) => {},
-  userId: null
+  userId: null,
+  username: null,
+  needsUsername: false,
+  updateUsername: async (_username: string | null) => {},
 });
 
 export interface UserInterface {
@@ -40,11 +46,13 @@ export interface UserInterface {
   idToken: unknown;
 }
 
-const TOKEN="fb-rant-access";
+const TOKEN = "fb-rant-access";
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [userid, setUserid] = useState<string | null>(null);
+  const [username, setUsername] = useState<string | null>(null);
+  const [needsUsername, setNeedsUsername] = useState(false);
   const [loading, setLoading] = useState(true); // Track loading state
   const [userToken, setUserToken] = useState<string | null>(null);
   const router = useRouter();
@@ -63,14 +71,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }
 
   
-  const postLogin = async function(user: UserInterface) {
+  const postLogin = async function(user: UserInterface): Promise<void> {
     const response = await axios.post(
       `${process.env.NEXT_PUBLIC_LOCAL_BACKEND_URL}/users/auth`,
         user
       );
       setUserid(response.data.user.u_id);
+      setUsername(response.data.user.username || null);
+      setNeedsUsername(Boolean(response.data.needsUsername));
       saveToken(response.data.token);
   }
+
+  const updateUsername = async (newUsername: string | null): Promise<void> => {
+    if (!userToken || !user) {
+      throw new Error("You must be signed in to set a username");
+    }
+    const response = await axios.put(
+      `${process.env.NEXT_PUBLIC_LOCAL_BACKEND_URL}/users/username`,
+      { username: newUsername },
+      { headers: { Authorization: `Bearer ${userToken}` } }
+    );
+    setUsername(response.data.username || null);
+    setNeedsUsername(false);
+  };
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(
@@ -103,7 +126,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             appName: "",
           };  
           
-          postLogin({
+          await postLogin({
             firebaseId: transformedUser.uid,
             displayName: transformedUser.displayName,
             email: transformedUser.email,
@@ -114,6 +137,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setUser(transformedUser);
         } else {
           setUser(null);
+          setUserid(null);
+          setUsername(null);
+          setNeedsUsername(false);
+          setUserToken(null);
         }
         setLoading(false); 
       }
@@ -123,7 +150,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading, userToken, saveToken, logOut, postLogin, userId: userid }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        loading,
+        userToken,
+        saveToken,
+        logOut,
+        postLogin,
+        userId: userid,
+        username,
+        needsUsername,
+        updateUsername,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
