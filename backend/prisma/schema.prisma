@@ -12,6 +12,7 @@ model User {
   firebaseId  String    @unique
   email       String
   username    String?
+  usernameSet Boolean   @default(false)
   displayName String?
   photoURL    String?
   createdAt   DateTime  @default(now())
@@ -19,6 +20,8 @@ model User {
   rants       Rant[]
   comments    Comment[]
   likes       Like[]
+
+  @@unique([username])
 }
 
 model Rant {

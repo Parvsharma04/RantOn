@@ -6,9 +6,19 @@ type IdParams = { id: string };
 export const getAllRants = async (req: Request, res: Response) => {
   try {
     const rants = await prisma.rant.findMany({
-      include: { author: true, likes: true },
+      include: {
+        author: true, 
+        likes: true, 
+        _count: {
+          select: {
+            comments: true,
+          },
+        },
+      },
     });
-    res.json(rants);
+    res.json(
+      rants
+    );
   } catch (error) {
     res.status(500).json({ error: (error as Error).message });
   }
